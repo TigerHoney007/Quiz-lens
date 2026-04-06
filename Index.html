@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Lens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #242424;
+      --accent: #e8ff47;
+      --accent-dim: #b8cc2a;
+      --text: #f0f0f0;
+      --muted: #666;
+      --error: #ff4d4d;
+      --success: #47ff8e;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .mode-badge {
+      margin-left: auto;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── CAPTURE MODE ── */
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: 0.7;
+    }
+    .corner.tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+    .corner.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+    .corner.bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+    .corner.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+    canvas { display: none; }
+
+    .snap-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: #0a0a0a;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .snap-btn:hover:not(:disabled) { background: var(--accent-dim); }
+    .snap-btn:active:not(:disabled) { transform: scale(0.99); }
+    .snap-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+    .status {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      min-height: 20px;
+    }
+
+    .status.ok { color: var(--success); }
+    .status.err { color: var(--error); }
+    .status.loading { color: var(--accent); }
+
+    /* ── DISPLAY MODE ── */
+    .waiting {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 60px 0;
+    }
+
+    .pulse-ring {
+      width: 48px;
+      height: 48px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+
+    .waiting-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      display: none;
+      animation: fadein 0.4s ease;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .answer-card h2 {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 24px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .answer-card h2:first-child { margin-top: 0; }
+
+    .answer-card p {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--text);
+      font-weight: 300;
+    }
+
+    .answer-card hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    .timestamp {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-top: 20px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── SETUP SCREEN ── */
+    .setup-notice {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 20px;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .setup-notice code {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--bg);
+      padding: 2px 6px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">Quiz Lens</span>
+  <span class="mode-badge" id="modeBadge">—</span>
+</header>
+
+<div class="main" id="app"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ════════════════════════════════════════════════
+  //  CONFIG — fill these in before deploying
+  // ════════════════════════════════════════════════
+  const ANTHROPIC_KEY   = "YOUR_ANTHROPIC_API_KEY";
+
+  const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC3h5ONATimpcx0hdKu4jcbxx77sokL2Io",
+  authDomain:        "multi-device-crossover.firebaseapp.com",
+  databaseURL:       "https://multi-device-crossover-default-rtdb.firebaseio.com",
+  projectId:         "multi-device-crossover",
+  storageBucket:     "multi-device-crossover.firebasestorage.app",
+  messagingSenderId: "128510847912",
+  appId:             "1:128510847912:web:f21728cb53bdc46903cb9d"
+};
+
+  const SYSTEM_PROMPT = `You are a concise study assistant. The image contains one or more exam or homework questions.
+
+For EACH question, respond using this exact format:
+
+## Question
+[Restate the question exactly or summarize it precisely]
+
+## Answer
+[The direct, correct answer — number, label, formula result, or term]
+
+## Why
+[1–3 sentences max explaining the logic or key concept]
+
+---
+
+If there are multiple questions, repeat the block for each. Do not add any preamble or closing remarks. Be direct.`;
+  // ════════════════════════════════════════════════
+
+  const needsConfig = ANTHROPIC_KEY === "sk-ant-api03-LzNbO1Xj2YXfuUcC6uhqZDrsLFsCODtXoNvi9C9IXhzJQWa4buS1wlu85dqburPMFvYIKVO0AEzBV6LbU_1i96-W9DHoQAA";
+  const app    = initializeApp(FIREBASE_CONFIG);
+  const db     = getDatabase(app);
+  const qRef   = ref(db, 'quiz/latest');
+  const mode   = new URLSearchParams(window.location.search).get('mode') || 'capture';
+  const badge  = document.getElementById('modeBadge');
+  const appDiv = document.getElementById('app');
+
+  badge.textContent = mode === 'capture' ? 'Capture' : 'Display';
+
+  if (needsConfig) {
+    appDiv.innerHTML = `
+      <div class="setup-notice">
+        <strong style="color:var(--accent)">Setup required.</strong><br><br>
+        Open the HTML file and fill in:<br>
+        <code>ANTHROPIC_KEY</code> — your Anthropic API key<br>
+        <code>FIREBASE_CONFIG</code> — from your Firebase console<br><br>
+        Then deploy to GitHub Pages and open:<br>
+        <code>yoursite.com?mode=capture</code> — on the camera device<br>
+        <code>yoursite.com?mode=display</code> — on the answer device
+      </div>`;
+    return;
+  }
+
+  mode === 'capture' ? runCapture() : runDisplay();
+
+  // ── CAPTURE ──────────────────────────────────────
+  function runCapture() {
+    appDiv.innerHTML = `
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+      <button class="snap-btn" id="snapBtn">[ Capture & Send ]</button>
+      <div class="status" id="status">Starting camera...</div>
+    `;
+
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const btn    = document.getElementById('snapBtn');
+    const status = document.getElementById('status');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        video.srcObject = stream;
+        setStatus('Camera ready.', '');
+      })
+      .catch(err => setStatus('Camera error: ' + err.message, 'err'));
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      setStatus('Sending to Claude...', 'loading');
+
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-client-side-request-broswer-unsafe': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            system: SYSTEM_PROMPT,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+                { type: 'text', text: 'Answer the question(s) shown.' }
+              ]
+            }]
+          })
+        });
+
+        const data   = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        const answer = data.content[0].text;
+
+        await set(qRef, { answer, timestamp: Date.now() });
+        setStatus('✓ Sent to display device.', 'ok');
+
+      } catch (err) {
+        setStatus('Error: ' + err.message, 'err');
+      }
+
+      btn.disabled = false;
+    });
+
+    function setStatus(msg, type) {
+      status.textContent = msg;
+      status.className = 'status ' + (type || '');
+    }
+  }
+
+  // ── DISPLAY ──────────────────────────────────────
+  function runDisplay() {
+    appDiv.innerHTML = `
+      <div class="waiting" id="waiting">
+        <div class="pulse-ring"></div>
+        <span class="waiting-text">Waiting for question...</span>
+      </div>
+      <div class="answer-card" id="answerCard"></div>
+    `;
+
+    const waiting    = document.getElementById('waiting');
+    const answerCard = document.getElementById('answerCard');
+
+    onValue(qRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data?.answer) return;
+
+      waiting.style.display    = 'none';
+      answerCard.style.display = 'block';
+      answerCard.innerHTML = renderAnswer(data.answer) +
+        `<div class="timestamp">${new Date(data.timestamp).toLocaleTimeString()}</div>`;
+    });
+  }
+
+  function renderAnswer(text) {
+    // Convert ## headings, --- dividers, and newlines to HTML
+    return text
+      .split('\n')
+      .map(line => {
+        if (/^## .+/.test(line))  return `<h2>${line.replace('## ', '')}</h2>`;
+        if (/^---$/.test(line))   return `<hr>`;
+        if (line.trim() === '')   return '';
+        return `<p>${line}</p>`;
+      })
+      .join('');
+  }
+</script>
+</body>
+</html>
