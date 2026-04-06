@@ -274,8 +274,7 @@ For EACH question, respond using this exact format:
 If there are multiple questions, repeat the block for each. Do not add any preamble or closing remarks. Be direct.`;
   // ════════════════════════════════════════════════
 
-  const needsConfig = ANTHROPIC_KEY === "sk-ant-api03-LzNbO1Xj2YXfuUcC6uhqZDrsLFsCODtXoNvi9C9IXhzJQWa4buS1wlu85dqburPMFvYIKVO0AEzBV6LbU_1i96-W9DHoQAA";
-  const app    = initializeApp(FIREBASE_CONFIG);
+ 
   const db     = getDatabase(app);
   const qRef   = ref(db, 'quiz/latest');
   const mode   = new URLSearchParams(window.location.search).get('mode') || 'capture';
@@ -284,19 +283,7 @@ If there are multiple questions, repeat the block for each. Do not add any pream
 
   badge.textContent = mode === 'capture' ? 'Capture' : 'Display';
 
-  if (needsConfig) {
-    appDiv.innerHTML = `
-      <div class="setup-notice">
-        <strong style="color:var(--accent)">Setup required.</strong><br><br>
-        Open the HTML file and fill in:<br>
-        <code>ANTHROPIC_KEY</code> — your Anthropic API key<br>
-        <code>FIREBASE_CONFIG</code> — from your Firebase console<br><br>
-        Then deploy to GitHub Pages and open:<br>
-        <code>yoursite.com?mode=capture</code> — on the camera device<br>
-        <code>yoursite.com?mode=display</code> — on the answer device
-      </div>`;
-    return;
-  }
+  
 
   mode === 'capture' ? runCapture() : runDisplay();
 
