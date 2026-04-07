@@ -274,7 +274,7 @@ For EACH question, respond using this exact format:
 If there are multiple questions, repeat the block for each. Do not add any preamble or closing remarks. Be direct.`;
   // ════════════════════════════════════════════════
 
- 
+  const app = initializeApp(FIREBASE_CONFIG);
   const db     = getDatabase(app);
   const qRef   = ref(db, 'quiz/latest');
   const mode   = new URLSearchParams(window.location.search).get('mode') || 'capture';
