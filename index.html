@@ -324,16 +324,13 @@ If there are multiple questions, repeat the block for each. Do not add any pream
       const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('https://YOUR_WORKER.workers.dev', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_KEY,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-client-side-request-broswer-unsafe': 'true'
           },
           body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'claude-haiku-4-5',
             max_tokens: 1024,
             system: SYSTEM_PROMPT,
             messages: [{
